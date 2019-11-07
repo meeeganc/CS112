@@ -1,0 +1,101 @@
+village.names <- c("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P")
+observed.voter.turnout = c(18, 30, 14, 52, 24, 29, 48, 49, 23, 35, 33, 19, 31, 29, 27, 45)
+  
+observed.diffmeans <- mean(observed.voter.turnout[c(2,4,6,8,10,12,14,16)]) - 
+  mean(observed.voter.turnout[c(1,3,5,7,9,11,13,15)])
+
+village <- data.frame(village.names, observed.voter.turnout)
+
+###FUNCTION 1 - ATE and FISHER'S P (without paired villages) ####
+
+function.1 <- function(outcomes){
+  assignment <- observed.voter.turnout[sample(1:16)]
+  
+  treatment.1 <- assignment[c(1,3,5,7,9)]
+  control.1 <- assignment[c(2,4,6,8,10)]
+  
+  return(mean(treatment.1) - mean(control.1))
+}
+
+iter.1 <- function(outcomes, iterations = 10000) {
+  for (i in 1:iterations) 
+  {storage.vector[i] <- function.1(outcomes)
+  }
+  return(storage.vector)
+}
+
+storage.vector <- NULL
+results <- iter.1(observed.voter.turnout)
+
+
+quantile(results, prob = c(0.95, 0.975))
+quantile(results, prob = c(0.25, 0.975))
+
+length(unique(results))
+
+pvalue <- function(storage.vector, test.statistic){
+  count = 0
+  for (i in 1:length(storage.vector)){
+    if(storage.vector[i]> test.statistic){
+      count = count+1
+    }
+  }
+  return(count/length(storage.vector))
+}
+
+pvalue <- pvalue(results, observed.diffmeans)
+pvalue
+
+
+#### FUNCTION 2 (with paired villages) #####
+
+observed.voter.turnout.2 = c(18, 30, 14, 52, 24, 29, 48, 49, 23, 35, 33, 19, 31, 29, 27, 45)
+
+observed.diffmeans <- mean(observed.voter.turnout.2[c(2,4,6,8,10,12,14,16)]) - 
+  mean(observed.voter.turnout.2[c(1,3,5,7,9,11,13,15)])
+
+
+function.2 <- function(outcomes){
+  assignment        <- outcomes[sample(1:2)]
+  assignment[3:4]  <- outcomes[sample(3:4)]
+  assignment[5:6]  <- outcomes[sample(5:6)]
+  assignment[7:8]  <- outcomes[sample(7:8)]
+  assignment[9:10]  <- outcomes[sample(9:10)]
+  assignment[11:12]  <- outcomes[sample(11:12)]
+  assignment[13:14]  <- outcomes[sample(13:14)]
+  assignment[15:16]  <- outcomes[sample(15:16)]
+  
+  treatment.2   <- assignment[c(1,3,5,7,9)]
+  control.2     <- assignment[c(2,4,6,8,10)]
+  
+  return(mean(treatment.2) - mean(control.2))
+}
+
+
+iter.2 <- function(outcomes, iterations = 10000) {
+  for (i in 1:iterations) 
+  {storage.vector[i] <- function.2(outcomes)
+  }
+  return(storage.vector)
+}
+
+storage.vector.2 <- NULL
+results.2 <- iter.2(observed.voter.turnout.2)
+
+quantile(results.2, prob = c(0.95, 0.975))
+quantile(results.2, prob = c(0.25, 0.975))
+
+length(unique(results.2))
+
+pvalue <- function(storage.vector, test.statistic) {
+  count = 0
+  for (i in 1:length(storage.vector)) {
+    if (storage.vector[i] > test.statistic){
+      count = count + 1
+    }
+  }
+  return (count/length(storage.vector))
+}
+
+pvalue <- pvalue(results, observed.diffmeans)
+pvalue
