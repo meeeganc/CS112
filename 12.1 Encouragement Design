@@ -1,0 +1,77 @@
+
+
+install.packages("foreign")
+library(foreign)
+jtpa_data <- read.dta("jtpa.dta")
+
+###Test whether you see any differences between treatment
+### and control in 2 baseline characteristics, 
+### such as race, previous work experience, marital status, age, etc.
+
+View(jtpa_data)
+
+men <- jtpa_data[- which(jtpa_data$sex == 0), ]
+women <- jtpa_data[- which(jtpa_data$sex == 1), ]
+
+
+men.treat <- men[-which(men$assignmt == 0), ]
+men.control <- men[-which(men$assignmt == 1), ]
+
+women.treat <- women[-which(women$assignmt == 0), ]
+women.control <- women[-which(women$assignmt == 0), ]
+
+##Testing differences in characteristics between two groups (separated by men and women)
+mean(men.treat$black) - mean(men.control$black)
+mean(men$hispanic) - mean(men$hispanic)
+mean(men.treat$age) - mean(men.control$age)
+
+
+mean(women.treat$black) - mean(women.control$black)
+mean(women.treat$hispanic) - mean(women.control$hispanic)
+mean(women.treat$age) - mean(women.control$age)
+
+## 2. looked only at those assigned treatment. Saw how many of those 
+#who were assigned treatment did not receive trainig
+assigned.treat <- jtpa_data[-which(jtpa_data$assignmt == 0), ]
+which(assigned.treat$training == 0)
+
+#treatment, treated
+which(jtpa_data$assignmt == 1 & jtpa_data$training == 1)
+
+#control treated
+which(jtpa_data$assignmt == 0 & jtpa_data$training == 1)
+
+#Impact of assignment to JTPA program on worker's earnings
+#men
+
+lm.men <- lm(earnings ~ assignmt + site+ training+ afdc+
+           class_tr+ ojt_jsa+ oth_serv+ bdate+ age+ prevearn+ married+ pbhous+ hsorged+ black+ hispanic+ f2sms+ wkless13, 
+           data = jtpa_data)
+
+summary(lm.men)
+
+library(Matching)
+library(rgenoud)
+attach(men)
+X = cbind(assignmt, bdate, age, prevearn, married, 
+          pbhous, hsorged, black, hispanic, f2sms)
+detach(men)
+Y = men$earnings
+Tr.men = men$assignmt
+
+
+genout.men <- GenMatch(Tr = Tr.men, X = X, M = 1,
+                   pop.size = 200, max.generations = 10, wait.generations = 25)
+
+
+mout.men <- Match <- Match(Y = Y, Tr = Tr, X = X, M = 1, BiasAdjust = T, Weight.matrix = genout.men)
+summary(mout.men)
+mout.men$est.noadj
+mb.men <- MatchBalance(Tr ~ assignment, site, training, afdc, sex, 
+                   class_tr, ojt_jsa, oth_serv, bdate, age, prevearn, married, pbhous, hsorgened, black, hispanic, f2sms,
+                   wkless13, data = jtpa_data, 
+                   match.out = mout.men, nboots=500)
+              
+mean(men.treat$earnings) - mean(men.control$earnings)
+
+mean(women.treat$earnings) - mean(women.control$earnings)
